@@ -1,0 +1,13 @@
+# Blender 4.3.2 MTL File: 'Key for upload.blend'
+# www.blender.org
+
+newmtl Brass_scratch_metal_texture
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd C:/Diffuse.png
+map_Ns C:/Roughness.png
+map_Bump -bm 0.100000 C:/Normal.png
