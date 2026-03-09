@@ -20,6 +20,27 @@ using std::cout;
 #define STB_IMAGE_IMPLEMENTATION
 #include "helper/stb/stb_image.h"
 
+static void logGLCheck(const std::string& label)
+{
+    GLenum err;
+    bool foundError = false;
+
+    while ((err = glGetError()) != GL_NO_ERROR)
+    {
+        std::cerr << "[OpenGL Error] " << label << " | code: " << err << std::endl;
+        foundError = true;
+    }
+
+    if (!foundError)
+    {
+        std::cout << "[OK] " << label << std::endl;
+    }
+}
+
+static void logSection(const std::string& label)
+{
+    std::cout << "\n========== " << label << " ==========" << std::endl;
+}
 SceneBasic_Uniform::SceneBasic_Uniform()
     : angle(0.0f),
     framebuffer(0),
@@ -33,6 +54,10 @@ SceneBasic_Uniform::SceneBasic_Uniform()
     animationEnabled(true),
     swordAutoPulled(false),
     gammaEnabled(false),
+    previousCollectedCount(0),
+    orbPickupPulseTimer(0.0f),
+    winOverlayAmount(0.0f),
+    rPressedLastFrame(false),
     camera(glm::vec3(0.0f, 3.0f, 8.0f)),
     lastTime(0.0f),
     deltaTime(0.0f),
@@ -47,17 +72,24 @@ SceneBasic_Uniform::SceneBasic_Uniform()
     bloomEnabled(true),
     bloomStrength(1.0f)
 {
+    {
+        std::cout << "[Init] SceneBasic_Uniform constructed." << std::endl;
+    }
 }
 
 void SceneBasic_Uniform::initScene()
 {
     compile();
 
+    logSection("initScene started");
+    std::cout << "[Init] Beginning scene setup..." << std::endl;
+
     GLFWwindow* window = glfwGetCurrentContext();
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.04f, 0.04f, 0.06f, 1.0f);
+    logGLCheck("Basic OpenGL state setup");
 
     float positions[] = {
         // Front
@@ -170,7 +202,7 @@ void SceneBasic_Uniform::initScene()
     GLuint texCoordBufferHandle = vboHandles[2];
     GLuint tangentBufferHandle = vboHandles[3];
 
-   
+
     glBindBuffer(GL_ARRAY_BUFFER, tangentBufferHandle);
     glBufferData(GL_ARRAY_BUFFER, sizeof(tangents), tangents, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
@@ -221,6 +253,9 @@ void SceneBasic_Uniform::initScene()
 
     glBindVertexArray(0);
 
+    std::cout << "[Init] Main cube geometry buffers created." << std::endl;
+    logGLCheck("Main cube VAO/VBO setup");
+
     // -------- Load shrine stone texture --------
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(true);
@@ -249,6 +284,10 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(image);
 
+    std::cout << "[Init] Loaded texture: assets/stone.jpg ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Stone texture upload");
+
     // -------- Load moss texture --------
     unsigned char* mossImage = stbi_load("assets/moss.jpg", &texWidth, &texHeight, &texChannels, 0);
 
@@ -274,6 +313,10 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     stbi_image_free(mossImage);
+
+    std::cout << "[Init] Loaded texture: assets/moss.jpg ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Moss texture upload");
 
     // -------- Load stone normal map --------
     unsigned char* normalImage = stbi_load("assets/stone_normal.jpg", &texWidth, &texHeight, &texChannels, 0);
@@ -301,6 +344,10 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(normalImage);
 
+    std::cout << "[Init] Loaded normal map: assets/stone_normal.jpg ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Normal map upload");
+
     // -------- Load tree texture --------
     unsigned char* treeImage = stbi_load("assets/treecolorpallet.png", &texWidth, &texHeight, &texChannels, 0);
 
@@ -327,6 +374,10 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(treeImage);
 
+    std::cout << "[Init] Loaded texture: assets/treecolorpallet.png ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Tree texture upload");
+
     // -------- Load key texture --------
     unsigned char* keyImage = stbi_load("assets/key.jpg", &texWidth, &texHeight, &texChannels, 0);
 
@@ -352,6 +403,40 @@ void SceneBasic_Uniform::initScene()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     stbi_image_free(keyImage);
+
+    std::cout << "[Init] Loaded texture: assets/key.jpg ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Key texture upload");
+
+    // -------- Load win screen overlay --------
+    unsigned char* winImage = stbi_load("assets/youwin.jpg", &texWidth, &texHeight, &texChannels, 0);
+
+    if (!winImage) {
+        cerr << "Failed to load texture: assets/youwin.jpg" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    format = GL_RGB;
+    if (texChannels == 1) format = GL_RED;
+    else if (texChannels == 3) format = GL_RGB;
+    else if (texChannels == 4) format = GL_RGBA;
+
+    glGenTextures(1, &winScreenTex);
+    glBindTexture(GL_TEXTURE_2D, winScreenTex);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, winImage);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_image_free(winImage);
+
+    std::cout << "[Init] Loaded overlay texture: assets/youwin.jpg ("
+        << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
+    logGLCheck("Win overlay texture upload");
 
     prog.use();
     prog.setUniform("DiffuseTex", 0);
@@ -422,6 +507,10 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(skyData);
 
+    std::cout << "[Init] Loaded sky texture: assets/sky.jpg ("
+        << skyWidth << "x" << skyHeight << ", channels=" << skyChannels << ")" << std::endl;
+    logGLCheck("Sky texture upload");
+
     skyProg.use();
     skyProg.setUniform("SkyTexture", 0);
 
@@ -429,6 +518,8 @@ void SceneBasic_Uniform::initScene()
     setupMainFramebuffer();
     setupBloomBuffers();
 
+    std::cout << "[Init] Framebuffers created." << std::endl;
+    logGLCheck("Framebuffer setup complete");
 
     // -------- Screen quad --------
     float quadVertices[] = {
@@ -459,24 +550,64 @@ void SceneBasic_Uniform::initScene()
 
     screenProg.use();
     screenProg.setUniform("ScreenTexture", 0);
- 
+
 
     if (!sword.loadModel("assets/sword.obj")) {
         cerr << "Failed to load sword model." << endl;
         exit(EXIT_FAILURE);
     }
+    std::cout << "[Init] Loaded model: assets/sword.obj" << std::endl;
+
     if (!tree.load("assets/tree.obj")) {
         cerr << "Failed to load tree model!" << endl;
         exit(EXIT_FAILURE);
     }
+    std::cout << "[Init] Loaded model: assets/tree.obj" << std::endl;
+
     if (!keyModel.load("assets/Key.obj")) {
         cerr << "Failed to load key model!" << endl;
         exit(EXIT_FAILURE);
     }
+    std::cout << "[Init] Loaded model: assets/Key.obj" << std::endl;
+
+    previousCollectedCount = gameplay.getCollectedCount();
+
+    std::cout << "[Init] Initial orb count: " << previousCollectedCount << std::endl;
+    logGLCheck("Final initScene check");
+    std::cout << "[Init] Scene setup complete." << std::endl;
 }
 
+void SceneBasic_Uniform::resetScene()
+{
+    gameplay.reset();
+
+    sword = Sword();
+    if (!sword.loadModel("assets/sword.obj"))
+    {
+        std::cerr << "[Gameplay] Failed to reload sword model during reset." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::cout << "[Gameplay] Sword reset and reloaded." << std::endl;
+
+    swordAutoPulled = false;
+
+    camera = Camera(glm::vec3(0.0f, 3.0f, 8.0f));
+    firstMouse = true;
+
+    previousCollectedCount = gameplay.getCollectedCount();
+    orbPickupPulseTimer = 0.0f;
+    winOverlayAmount = 0.0f;
+
+    angle = 0.0f;
+
+    std::cout << "[Gameplay] Scene reset complete. Orb count reset to "
+        << previousCollectedCount << std::endl;
+}
 void SceneBasic_Uniform::setupMainFramebuffer()
 {
+    logSection("setupMainFramebuffer");
+    std::cout << "[FBO] Creating main framebuffer at " << width << "x" << height << std::endl;
+
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -529,15 +660,26 @@ void SceneBasic_Uniform::setupMainFramebuffer()
         rboDepth
     );
 
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer not complete!" << std::endl;
+    GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cerr << "[FBO] Main framebuffer not complete! Status: " << fbStatus << std::endl;
+    }
+    else
+    {
+        std::cout << "[FBO] Main framebuffer complete." << std::endl;
+    }
+
+    logGLCheck("setupMainFramebuffer");
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 }
 
 void SceneBasic_Uniform::setupBloomBuffers()
 {
+    logSection("setupBloomBuffers");
+    std::cout << "[Bloom] Creating ping-pong buffers at " << width << "x" << height << std::endl;
+
     glGenFramebuffers(2, pingpongFBO);
     glGenTextures(2, pingpongColorbuffers);
 
@@ -569,36 +711,53 @@ void SceneBasic_Uniform::setupBloomBuffers()
             0
         );
 
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "Pingpong framebuffer not complete!" << std::endl;
+        GLenum pingStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (pingStatus != GL_FRAMEBUFFER_COMPLETE)
+        {
+            std::cerr << "[Bloom] Ping-pong framebuffer " << i
+                << " not complete! Status: " << pingStatus << std::endl;
+        }
+        else
+        {
+            std::cout << "[Bloom] Ping-pong framebuffer " << i << " complete." << std::endl;
+        }
     }
+    logGLCheck("setupBloomBuffers");
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SceneBasic_Uniform::compile()
 {
+    logSection("Shader compilation");
+
     try {
         prog.compileShader("shader/basic_uniform.vert");
         prog.compileShader("shader/basic_uniform.frag");
         prog.link();
+        std::cout << "[Shader] Linked basic shader program." << std::endl;
 
         skyProg.compileShader("shader/skybox.vert");
         skyProg.compileShader("shader/skybox.frag");
         skyProg.link();
+        std::cout << "[Shader] Linked skybox shader program." << std::endl;
 
         screenProg.compileShader("shader/screen.vert");
         screenProg.compileShader("shader/screen.frag");
         screenProg.link();
+        std::cout << "[Shader] Linked screen shader program." << std::endl;
 
         blurProg.compileShader("shader/blur.vert");
         blurProg.compileShader("shader/blur.frag");
         blurProg.link();
+        std::cout << "[Shader] Linked blur shader program." << std::endl;
 
         bloomFinalProg.compileShader("shader/bloom_final.vert");
         bloomFinalProg.compileShader("shader/bloom_final.frag");
         bloomFinalProg.link();
+        std::cout << "[Shader] Linked bloom final shader program." << std::endl;
 
+        logGLCheck("Shader compilation/linking");
         prog.use();
     }
     catch (GLSLProgramException& e) {
@@ -635,7 +794,7 @@ void SceneBasic_Uniform::update(float t)
     static bool nPressedLastFrame = false;
     static bool bPressedLastFrame = false;
 
-
+    bool rPressedNow = glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS;
     bool fPressedNow = glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS;
     bool mPressedNow = glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS;
     bool lPressedNow = glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS;
@@ -644,6 +803,13 @@ void SceneBasic_Uniform::update(float t)
     bool nPressedNow = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
     bool bPressedNow = glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS;
 
+    if (rPressedNow && !rPressedLastFrame)
+    {
+        std::cout << "[Input] R pressed - restarting scene." << std::endl;
+        resetScene();
+    }
+
+    rPressedLastFrame = rPressedNow;
     if (gPressedNow && !gPressedLastFrame)
         gammaEnabled = !gammaEnabled;
 
@@ -707,8 +873,20 @@ void SceneBasic_Uniform::update(float t)
 
     gameplay.update(camera.Position);
 
+    int currentCollectedCount = gameplay.getCollectedCount();
+    
+    if (currentCollectedCount > previousCollectedCount)
+    {
+        orbPickupPulseTimer = 0.35f;
+        std::cout << "[Gameplay] Orb collected. Count: "
+            << currentCollectedCount << " / "
+            << gameplay.getTotalOrbCount() << std::endl;
+    }
+    previousCollectedCount = currentCollectedCount;
+
     if (gameplay.allOrbsCollected() && !sword.isPulled() && !swordAutoPulled)
     {
+        std::cout << "[Gameplay] All orbs collected. Triggering sword pull." << std::endl;
         sword.triggerPull();
         swordAutoPulled = true;
     }
@@ -716,12 +894,33 @@ void SceneBasic_Uniform::update(float t)
     glm::vec3 swordWinPos = glm::vec3(0.0f, 1.8f, 0.0f);
     gameplay.checkSwordWin(camera.Position, swordWinPos, 1.4f);
 
+    if (orbPickupPulseTimer > 0.0f)
+    {
+        orbPickupPulseTimer -= deltaTime;
+        if (orbPickupPulseTimer < 0.0f)
+            orbPickupPulseTimer = 0.0f;
+    }
+
+    static bool winLogged = false;
+    if (gameplay.hasWon() && !winLogged)
+    {
+        std::cout << "[Gameplay] Player reached sword. WIN state triggered." << std::endl;
+        winLogged = true;
+    }
+    if (!gameplay.hasWon())
+    {
+        winLogged = false;
+    }
+
+    float targetOverlay = gameplay.hasWon() ? 1.0f : 0.0f;
+    winOverlayAmount += (targetOverlay - winOverlayAmount) * deltaTime * 3.5f;
+
     std::string title = "Mystical Shrine - Orbs: " +
         std::to_string(gameplay.getCollectedCount()) + " / " +
         std::to_string(gameplay.getTotalOrbCount());
 
     if (gameplay.hasWon())
-        title += " | You Win!";
+        title += " | YOU WIN - Press R to Restart";
     else if (gameplay.allOrbsCollected())
         title += " | Sword Unlocked!";
 
@@ -1176,6 +1375,8 @@ void SceneBasic_Uniform::renderBloomBlur()
 
 void SceneBasic_Uniform::resize(int w, int h)
 {
+    std::cout << "[Resize] Resizing scene to " << w << "x" << h << std::endl;
+
     width = w;
     height = h;
     glViewport(0, 0, w, h);
@@ -1205,10 +1406,13 @@ void SceneBasic_Uniform::resize(int w, int h)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         }
     }
+    logGLCheck("resize");
 }
 
 void SceneBasic_Uniform::renderFinalPass()
 {
+    static bool overlayLogged = false;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_DEPTH_TEST);
 
@@ -1221,6 +1425,10 @@ void SceneBasic_Uniform::renderFinalPass()
     bloomFinalProg.setUniform("bloomEnabled", bloomEnabled);
     bloomFinalProg.setUniform("bloomStrength", bloomStrength);
 
+    float pickupPulseStrength = orbPickupPulseTimer / 0.35f;
+    bloomFinalProg.setUniform("PickupPulseStrength", pickupPulseStrength);
+    bloomFinalProg.setUniform("WinOverlayAmount", winOverlayAmount);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, colorBufferTex);
 
@@ -1228,4 +1436,28 @@ void SceneBasic_Uniform::renderFinalPass()
     glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[0]);
 
     drawScreenQuad();
+
+    if (gameplay.hasWon())
+    {
+        if (!overlayLogged)
+        {
+            std::cout << "[Render] Win overlay rendered." << std::endl;
+            overlayLogged = true;
+        }
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        screenProg.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, winScreenTex);
+
+        drawScreenQuad();
+
+        glDisable(GL_BLEND);
+    }
+    else
+    {
+        overlayLogged = false;
+    }
 }

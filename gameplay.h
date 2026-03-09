@@ -23,7 +23,7 @@ private:
 
 public:
     Gameplay();
-
+    void reset();
     void initOrbs();
     void update(const glm::vec3& playerPos);
     void checkSwordWin(const glm::vec3& playerPos, const glm::vec3& swordPos, float swordRadius);

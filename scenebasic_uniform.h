@@ -27,7 +27,13 @@ private:
     GLuint framebuffer;
     GLuint colorBufferTex;
     GLuint rboDepth;
+    int previousCollectedCount;
+    float orbPickupPulseTimer;
+    float winOverlayAmount;
+    GLuint winScreenTex;
+    bool rPressedLastFrame;
 
+    void resetScene();
     GLuint quadVAO;
     GLuint quadVBO;
 

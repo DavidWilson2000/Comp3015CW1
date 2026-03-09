@@ -117,3 +117,9 @@ bool Gameplay::hasWon() const
 {
     return playerHasWon;
 }
+
+void Gameplay::reset()
+{
+    playerHasWon = false;
+    initOrbs();
+}
