@@ -3,10 +3,19 @@ Mystical Shrine – OpenGL Graphics Prototype
 \
 \
 How to Run
+\
+1. Extract the project zip folder.
+\
+2. Open the Game folder.
+\
+3. Run Project_Template.exe.
 
-Open Game Folder
+Ensure the following folders are located beside the executable:
 
-Click Project_Temlpate.exe
+- media/
+- shader/
+
+These contain textures, models, and GLSL shader programs required by the application.
 \
 \
 \
