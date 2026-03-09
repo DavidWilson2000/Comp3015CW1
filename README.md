@@ -257,3 +257,26 @@ improved environment modelling
 Author
 Student: David Wilson
 Module: COMP3015 Graphics Programming
+\
+\
+\
+AI Usage
+Generative AI tools were used to help in drafting the README documentation for this project. The AI was used to help structure explanations of the rendering pipeline, graphics techniques, and gameplay mechanics, as well as to improve clarity and grammar in the written description.
+
+
+
+AI was used to assist with the format of the code itself (double checking for general errors and linking all of the files together) as well as generating ideas for what to make the project at the beginning 
+
+<img width="928" height="745" alt="image" src="https://github.com/user-attachments/assets/e127d88b-4efc-442b-a8ee-5f233be97e72" />
+
+AI was used to help create in game models (mainly the fire around the keys)
+<img width="862" height="417" alt="image" src="https://github.com/user-attachments/assets/241b1308-c8ed-4321-b7f5-2469f5482ea4" />
+
+
+AI was used to create a victory screen due to time constrants 
+<img width="971" height="507" alt="image" src="https://github.com/user-attachments/assets/bbd8e915-4cf4-4223-a3c8-3baef3732123" />
+
+AI was mainly useful for checking my work against the marking rubric to ensure that i had ticked all boxes and had not forgotten to add any features
+
+
+<img width="1081" height="577" alt="image" src="https://github.com/user-attachments/assets/f4d7a8a7-947d-4d03-8163-a0bbeba42aaa" />
