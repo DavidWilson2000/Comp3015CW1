@@ -279,4 +279,5 @@ AI was used to create a victory screen due to time constrants
 AI was mainly useful for checking my work against the marking rubric to ensure that i had ticked all boxes and had not forgotten to add any features
 
 
-<img width="1081" height="577" alt="image" src="https://github.com/user-attachments/assets/f4d7a8a7-947d-4d03-8163-a0bbeba42aaa" />
+<img width="932" height="830" alt="image" src="https://github.com/user-attachments/assets/aed74ca8-695d-413f-9619-9a480ffd369b" />
+
