@@ -1175,7 +1175,9 @@ void SceneBasic_Uniform::render()
     const int treeCount = 50;
     const float innerRadius = 12.5f;
     const float outerRadius = 14.5f;
-    const float groundY = -1.65f;
+
+	// Ground level for tree placement
+    const float groundY = -2.45f;
 
     for (int i = 0; i < treeCount; i++)
     {
