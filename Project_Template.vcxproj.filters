@@ -62,9 +62,6 @@
     <None Include="shader\basic_uniform.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="skybox.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shader\screen.vert">
       <Filter>shaders</Filter>
     </None>
@@ -81,6 +78,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shader\bloom_final.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\skybox.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

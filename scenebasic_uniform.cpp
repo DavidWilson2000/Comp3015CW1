@@ -77,6 +77,52 @@ SceneBasic_Uniform::SceneBasic_Uniform()
     }
 }
 
+GLuint loadCubemap(std::vector<std::string> faces)
+{
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+
+        if (data)
+        {
+            GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
+
+            glTexImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0,
+                format,
+                width,
+                height,
+                0,
+                format,
+                GL_UNSIGNED_BYTE,
+                data
+            );
+
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
 void SceneBasic_Uniform::initScene()
 {
     compile();
@@ -256,13 +302,13 @@ void SceneBasic_Uniform::initScene()
     std::cout << "[Init] Main cube geometry buffers created." << std::endl;
     logGLCheck("Main cube VAO/VBO setup");
 
-    // -------- Load shrine stone texture --------
+    //  Load shrine stone texture 
     int texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* image = stbi_load("assets/stone.jpg", &texWidth, &texHeight, &texChannels, 0);
+    unsigned char* image = stbi_load("media/stone.jpg", &texWidth, &texHeight, &texChannels, 0);
 
     if (!image) {
-        cerr << "Failed to load texture: assets/stone.jpg" << endl;
+        cerr << "Failed to load texture: media/stone.jpg" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -284,15 +330,15 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(image);
 
-    std::cout << "[Init] Loaded texture: assets/stone.jpg ("
+    std::cout << "[Init] Loaded texture: media/stone.jpg ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Stone texture upload");
 
-    // -------- Load moss texture --------
-    unsigned char* mossImage = stbi_load("assets/moss.jpg", &texWidth, &texHeight, &texChannels, 0);
+    //  Load moss texture 
+    unsigned char* mossImage = stbi_load("media/moss.jpg", &texWidth, &texHeight, &texChannels, 0);
 
     if (!mossImage) {
-        cerr << "Failed to load texture: assets/moss.jpg" << endl;
+        cerr << "Failed to load texture: media/moss.jpg" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -314,15 +360,15 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(mossImage);
 
-    std::cout << "[Init] Loaded texture: assets/moss.jpg ("
+    std::cout << "[Init] Loaded texture: media/moss.jpg ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Moss texture upload");
 
-    // -------- Load stone normal map --------
-    unsigned char* normalImage = stbi_load("assets/stone_normal.jpg", &texWidth, &texHeight, &texChannels, 0);
+    //  Load stone normal map 
+    unsigned char* normalImage = stbi_load("media/stone_normal.jpg", &texWidth, &texHeight, &texChannels, 0);
 
     if (!normalImage) {
-        cerr << "Failed to load texture: assets/stone_normal.jpg" << endl;
+        cerr << "Failed to load texture: media/stone_normal.jpg" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -344,15 +390,15 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(normalImage);
 
-    std::cout << "[Init] Loaded normal map: assets/stone_normal.jpg ("
+    std::cout << "[Init] Loaded normal map: media/stone_normal.jpg ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Normal map upload");
 
-    // -------- Load tree texture --------
-    unsigned char* treeImage = stbi_load("assets/treecolorpallet.png", &texWidth, &texHeight, &texChannels, 0);
+    //  Load tree texture 
+    unsigned char* treeImage = stbi_load("media/treecolorpallet.png", &texWidth, &texHeight, &texChannels, 0);
 
     if (!treeImage) {
-        cerr << "Failed to load texture: assets/treecolorpallet.png" << endl;
+        cerr << "Failed to load texture: media/treecolorpallet.png" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -374,15 +420,15 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(treeImage);
 
-    std::cout << "[Init] Loaded texture: assets/treecolorpallet.png ("
+    std::cout << "[Init] Loaded texture: media/treecolorpallet.png ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Tree texture upload");
 
-    // -------- Load key texture --------
-    unsigned char* keyImage = stbi_load("assets/key.jpg", &texWidth, &texHeight, &texChannels, 0);
+    //  Load key texture 
+    unsigned char* keyImage = stbi_load("media/key.jpg", &texWidth, &texHeight, &texChannels, 0);
 
     if (!keyImage) {
-        cerr << "Failed to load texture: assets/key.jpg" << endl;
+        cerr << "Failed to load texture: media/key.jpg" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -404,15 +450,15 @@ void SceneBasic_Uniform::initScene()
 
     stbi_image_free(keyImage);
 
-    std::cout << "[Init] Loaded texture: assets/key.jpg ("
+    std::cout << "[Init] Loaded texture: media/key.jpg ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Key texture upload");
 
-    // -------- Load win screen overlay --------
-    unsigned char* winImage = stbi_load("assets/youwin.jpg", &texWidth, &texHeight, &texChannels, 0);
+    //  Load win screen overlay 
+    unsigned char* winImage = stbi_load("media/youwin.jpg", &texWidth, &texHeight, &texChannels, 0);
 
     if (!winImage) {
-        cerr << "Failed to load texture: assets/youwin.jpg" << endl;
+        cerr << "Failed to load texture: media/youwin.jpg" << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -427,14 +473,14 @@ void SceneBasic_Uniform::initScene()
     glTexImage2D(GL_TEXTURE_2D, 0, format, texWidth, texHeight, 0, format, GL_UNSIGNED_BYTE, winImage);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     stbi_image_free(winImage);
 
-    std::cout << "[Init] Loaded overlay texture: assets/youwin.jpg ("
+    std::cout << "[Init] Loaded overlay texture: media/youwin.jpg ("
         << texWidth << "x" << texHeight << ", channels=" << texChannels << ")" << std::endl;
     logGLCheck("Win overlay texture upload");
 
@@ -446,7 +492,7 @@ void SceneBasic_Uniform::initScene()
     prog.setUniform("KeyTex", 4);
 
 
-    // -------- Skybox geometry --------
+    //  Skybox geometry 
     float skyboxVertices[] = {
         -1.0f, -1.0f, -1.0f,   1.0f, -1.0f, -1.0f,   1.0f,  1.0f, -1.0f,
          1.0f,  1.0f, -1.0f,  -1.0f,  1.0f, -1.0f,  -1.0f, -1.0f, -1.0f,
@@ -479,49 +525,35 @@ void SceneBasic_Uniform::initScene()
 
     glBindVertexArray(0);
 
-    // -------- Load sky texture --------
-    int skyWidth, skyHeight, skyChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* skyData = stbi_load("assets/sky.jpg", &skyWidth, &skyHeight, &skyChannels, 0);
+    //  Load cubemap skybox 
+    stbi_set_flip_vertically_on_load(false);
 
-    if (!skyData) {
-        cerr << "Failed to load sky texture: assets/sky.jpg" << endl;
-        exit(EXIT_FAILURE);
-    }
+    std::vector<std::string> faces
+    {
+        "media/sky_right.jpg",
+        "media/sky_left.jpg",
+        "media/sky_top.jpg",
+        "media/sky_bottom.jpg",
+        "media/sky_front.jpg",
+        "media/sky_back.jpg"
+    };
 
-    GLenum skyFormat = GL_RGB;
-    if (skyChannels == 1) skyFormat = GL_RED;
-    else if (skyChannels == 3) skyFormat = GL_RGB;
-    else if (skyChannels == 4) skyFormat = GL_RGBA;
+    skyboxTexture = loadCubemap(faces);
 
-    glGenTextures(1, &skyboxTexture);
-    glBindTexture(GL_TEXTURE_2D, skyboxTexture);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, skyFormat, skyWidth, skyHeight, 0, skyFormat, GL_UNSIGNED_BYTE, skyData);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    stbi_image_free(skyData);
-
-    std::cout << "[Init] Loaded sky texture: assets/sky.jpg ("
-        << skyWidth << "x" << skyHeight << ", channels=" << skyChannels << ")" << std::endl;
-    logGLCheck("Sky texture upload");
+    std::cout << "[Init] Loaded cubemap skybox." << std::endl;
+    logGLCheck("Cubemap skybox upload");
 
     skyProg.use();
     skyProg.setUniform("SkyTexture", 0);
 
-    // -------- Framebuffer setup --------
+    //  Framebuffer setup 
     setupMainFramebuffer();
     setupBloomBuffers();
 
     std::cout << "[Init] Framebuffers created." << std::endl;
     logGLCheck("Framebuffer setup complete");
 
-    // -------- Screen quad --------
+    //  Screen quad 
     float quadVertices[] = {
         // positions   // texCoords
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -552,23 +584,23 @@ void SceneBasic_Uniform::initScene()
     screenProg.setUniform("ScreenTexture", 0);
 
 
-    if (!sword.loadModel("assets/sword.obj")) {
+    if (!sword.loadModel("media/sword.obj")) {
         cerr << "Failed to load sword model." << endl;
         exit(EXIT_FAILURE);
     }
-    std::cout << "[Init] Loaded model: assets/sword.obj" << std::endl;
+    std::cout << "[Init] Loaded model: media/sword.obj" << std::endl;
 
-    if (!tree.load("assets/tree.obj")) {
+    if (!tree.load("media/tree.obj")) {
         cerr << "Failed to load tree model!" << endl;
         exit(EXIT_FAILURE);
     }
-    std::cout << "[Init] Loaded model: assets/tree.obj" << std::endl;
+    std::cout << "[Init] Loaded model: media/tree.obj" << std::endl;
 
-    if (!keyModel.load("assets/Key.obj")) {
+    if (!keyModel.load("media/Key.obj")) {
         cerr << "Failed to load key model!" << endl;
         exit(EXIT_FAILURE);
     }
-    std::cout << "[Init] Loaded model: assets/Key.obj" << std::endl;
+    std::cout << "[Init] Loaded model: media/Key.obj" << std::endl;
 
     previousCollectedCount = gameplay.getCollectedCount();
 
@@ -582,7 +614,7 @@ void SceneBasic_Uniform::resetScene()
     gameplay.reset();
 
     sword = Sword();
-    if (!sword.loadModel("assets/sword.obj"))
+    if (!sword.loadModel("media/sword.obj"))
     {
         std::cerr << "[Gameplay] Failed to reload sword model during reset." << std::endl;
         exit(EXIT_FAILURE);
@@ -785,7 +817,7 @@ void SceneBasic_Uniform::update(float t)
     deltaTime = t - lastTime;
     lastTime = t;
 
-    // -------- Scene toggle keys --------
+    //  Scene toggle keys 
     static bool fPressedLastFrame = false;
     static bool mPressedLastFrame = false;
     static bool lPressedLastFrame = false;
@@ -841,7 +873,7 @@ void SceneBasic_Uniform::update(float t)
     lPressedLastFrame = lPressedNow;
     spacePressedLastFrame = spacePressedNow;
 
-    // -------- WASD movement --------
+    //  WASD movement 
     bool forward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
     bool backward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
     bool left = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
@@ -849,7 +881,7 @@ void SceneBasic_Uniform::update(float t)
 
     camera.ProcessKeyboard(forward, backward, left, right, deltaTime);
 
-    // -------- Mouse look --------
+    //  Mouse look 
     if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
     {
         double xpos, ypos;
@@ -951,8 +983,10 @@ void SceneBasic_Uniform::render()
         100.0f
     );
 
-    // -------- Draw skybox first --------
+    //  Draw skybox first 
+    glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_FALSE);
+    glDisable(GL_CULL_FACE);
 
     skyProg.use();
 
@@ -962,14 +996,15 @@ void SceneBasic_Uniform::render()
 
     glBindVertexArray(skyboxVAO);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, skyboxTexture);
-    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
 
+    glEnable(GL_CULL_FACE);
     glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
 
-    // -------- Draw shrine scene --------
+    //  Draw shrine scene 
     prog.use();
 
     prog.setUniform("EmissiveEnabled", false);
@@ -1064,7 +1099,7 @@ void SceneBasic_Uniform::render()
     prog.setUniform("TileFactor", 2.0f);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    // ---------- Left pillar ----------
+    // -- Left pillar --
 
     // Base
     model = glm::mat4(1.0f);
@@ -1093,7 +1128,7 @@ void SceneBasic_Uniform::render()
     prog.setUniform("TileFactor", 1.8f);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    // ---------- Right pillar ----------
+    // -- Right pillar --
 
     // Base
     model = glm::mat4(1.0f);
@@ -1126,7 +1161,7 @@ void SceneBasic_Uniform::render()
 
     prog.setUniform("TileFactor", 1.0f);
 
-    // -------- Forest trees --------
+    //  Forest trees 
     prog.setUniform("EmissiveEnabled", false);
     prog.setUniform("EmissiveColor", glm::vec3(0.0f));
     prog.setUniform("NormalMapEnabled", false);
@@ -1179,7 +1214,7 @@ void SceneBasic_Uniform::render()
     prog.setUniform("UseFlatColor", false);
     prog.setUniform("NormalMapEnabled", normalMapEnabled);
 
-    // -------- Collectible orbs --------
+    //  Collectible orbs 
     renderOrbs();
 
     glBindVertexArray(vaoHandle);
@@ -1241,9 +1276,9 @@ void SceneBasic_Uniform::renderOrbs()
 
         glm::vec3 orbPos = orbs[i].position + glm::vec3(0.0f, 0.75f + bob, 0.0f);
 
-        // -----------------------------
+        // -
         // Transparent flame aura
-        // -----------------------------
+        // -
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         glDepthMask(GL_FALSE);
@@ -1289,9 +1324,9 @@ void SceneBasic_Uniform::renderOrbs()
         glBindVertexArray(vaoHandle);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // -----------------------------
+     
         // Solid key model
-        // -----------------------------
+       
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
 
